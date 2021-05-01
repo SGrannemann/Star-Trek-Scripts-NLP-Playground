@@ -1,8 +1,10 @@
 from gensim.models.phrases import Phraser
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.decomposition import TruncatedSVD
 from nltk.tokenize import word_tokenize
 import pandas as pd
+import seaborn as sns
 
 
 def remove_speakers_and_empty_lines(episode_content: str) -> str:
@@ -51,14 +53,33 @@ if __name__ == '__main__':
 
     tfidf_episodes_frames = pd.DataFrame(tfidf_episodes.toarray())
     
+    
+    
+    
+    # convert the vector space to LSA space with reduced dimensions
+    # we use 156 components as that retains 95% of the variance in the dataset.
+
+    svd = TruncatedSVD(n_components=156, random_state=42)
+    svd.fit(tfidf_episodes)
+
+    
+
+
     #print(tfidf_episodes)
      
-    query = input('What are you looking for?')
-    bigram_query = [' '.join(bigrams[word_tokenize(query)])]
+    #query = input('What are you looking for?')
+    #bigram_query = [' '.join(bigrams[word_tokenize(query)])]
 
-    tfidf_query = tfidf_model.transform(bigram_query)
+    #tfidf_query = tfidf_model.transform(bigram_query)
 
-    cosineSimilarities = cosine_similarity(tfidf_query, tfidf_episodes).flatten()
-    print(cosineSimilarities)
-    print(len(cosineSimilarities))
+    #cosineSimilarities = cosine_similarity(tfidf_query, tfidf_episodes).flatten()
+    #print(cosineSimilarities)
+    #print(len(cosineSimilarities))
 
+    # todo: split episode title in extra column
+    # use the cosine similarity to find the index (and with that the title)
+    # of the episode most similar to the query.
+    # TODO: Refactor functions into good style and import them
+    # TODO: Move creation and saving of tfidf model into own file
+    # TODO: Load that model then for the scoring scripts
+    # TODO: Save the processed dataframe (including titles)

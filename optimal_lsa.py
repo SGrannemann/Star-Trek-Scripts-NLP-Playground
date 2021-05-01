@@ -1,8 +1,10 @@
 from gensim.models.phrases import Phraser
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.decomposition import TruncatedSVD
 from nltk.tokenize import word_tokenize
 import pandas as pd
+import seaborn as sns
 
 
 def remove_speakers_and_empty_lines(episode_content: str) -> str:
@@ -50,15 +52,24 @@ if __name__ == '__main__':
     tfidf_episodes = tfidf_model.transform(tng_series_scripts_cleaned['text with bigrams'])
 
     tfidf_episodes_frames = pd.DataFrame(tfidf_episodes.toarray())
+    print(len(tfidf_episodes_frames.columns))
     
-    #print(tfidf_episodes)
-     
-    query = input('What are you looking for?')
-    bigram_query = [' '.join(bigrams[word_tokenize(query)])]
+    
+    
+    # convert the vector space to LSA space with reduced dimensions
 
-    tfidf_query = tfidf_model.transform(bigram_query)
+    svd = TruncatedSVD(n_components=1000,  random_state=42)
+    svd.fit(tfidf_episodes)
+    print(svd.explained_variance_ratio_.sum())
+    # lets find the optimal amount of dimensions
+    # that is, take as many dimensions as necessary to explain 95% of the variance in the data
+    
+    i = 0
+    # we can use .cumsum() which is the cumulative sum
+    while svd.explained_variance_ratio_.cumsum()[i] < 0.95 and i < len(svd.components_) - 1:
+        i +=1
+    print(i)
 
-    cosineSimilarities = cosine_similarity(tfidf_query, tfidf_episodes).flatten()
-    print(cosineSimilarities)
-    print(len(cosineSimilarities))
-
+    # as we can see, 156 components/dimensions are necessary to explain 95% of the variance
+    # but that is still a massiv reduction from 23337 dimensions before.
+    

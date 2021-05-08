@@ -3,11 +3,12 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.decomposition import TruncatedSVD
 from nltk.tokenize import word_tokenize
+from joblib import load
 import pandas as pd
 import seaborn as sns
 
 
-
+# TODO: Adjust the querying to the one used in the tfidf scoring.
 
 bigrams = Phraser.load('bigram_model.pkl')
 
@@ -28,8 +29,19 @@ tfidf_episodes_frames = pd.DataFrame(tfidf_episodes.toarray())
 
 svd = TruncatedSVD(n_components=160, random_state=42)
 svd.fit(tfidf_episodes)
+lsa_episodes = svd.transform(tfidf_episodes)
 
+query = input('What are you looking for?')
+bigram_query = [' '.join(bigrams[word_tokenize(query)])]
 
+lsa_query = svd.transform(tfidf_model.transform(bigram_query))
 
+cosineSimilarities = cosine_similarity(lsa_query, lsa_episodes).flatten()
+print(cosineSimilarities)
+print(len(cosineSimilarities))
 
+# find the highest 5 episodes
+search_results = [(index, score) for index,score in enumerate(cosineSimilarities)]
+search_results.sort(key= lambda x: x[1], reverse=True)
+print(search_results)
 

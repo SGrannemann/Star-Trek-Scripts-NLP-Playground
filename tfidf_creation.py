@@ -7,7 +7,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 tng_series_scripts_cleaned = pd.read_pickle('cleaned_tng_scripts.pkl')
 
 
-
 tfidf_model = TfidfVectorizer().fit(tng_series_scripts_cleaned['text with bigrams'])
 
 dump(tfidf_model, 'tfidf_model.pkl')

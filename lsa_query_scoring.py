@@ -40,8 +40,13 @@ cosineSimilarities = cosine_similarity(lsa_query, lsa_episodes).flatten()
 print(cosineSimilarities)
 print(len(cosineSimilarities))
 
-# find the highest 5 episodes
-search_results = [(index, score) for index,score in enumerate(cosineSimilarities)]
+
+
+# get list of all titles (starting from episode 0 ascending)
+list_of_titles = list(tng_series_scripts_cleaned['title'].values)
+# combine the title with the respective cosine similarity for the query, gives tuples: (title, score)
+search_results = list(zip(list_of_titles, cosineSimilarities))
+
+# sort the tuples of (title, score) by score
 search_results.sort(key= lambda x: x[1], reverse=True)
 print(search_results)
-

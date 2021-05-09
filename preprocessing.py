@@ -6,7 +6,7 @@ from nltk.tokenize import word_tokenize
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
+# TODO: Add plot descriptions from wikipedia to dataframe.
 
 def remove_speakers_and_empty_lines(episode_content: str) -> str:
     """Removes superfluous empty lines and the names of the speakers from the input data:
@@ -50,17 +50,20 @@ def get_title(episode_content:str) -> str:
     return title
 
 all_series_scripts = pd.read_json('all_scripts_raw.json')
-#print(all_series_scripts.TNG)
-#  remove the names of the speakers and get rid of the empty lines
+
+# remove the names of the speakers and get rid of the empty lines
 # and I'll focus on The Next Generation Episodes for now
 tng_series_scripts_cleaned = all_series_scripts.TNG.map(remove_speakers_and_empty_lines)
 tng_series_scripts_cleaned = pd.DataFrame({'EpisodeText' : tng_series_scripts_cleaned})
+tng_series_scripts_cleaned['title'] = all_series_scripts.TNG.map(get_title)
+
+# TODO: add plot description in own column
 
 # use the bigram model to combine tokens into bigrams if appropriate
 bigrams = Phraser.load('bigram_model.pkl')
-
+# TODO: text with bigrams should first concat script and plot description, then use the phraser.
 tng_series_scripts_cleaned['text with bigrams'] =  [' '.join(bigrams[word_tokenize(episode_text)]) for episode_text in tng_series_scripts_cleaned.EpisodeText]
 # get the title of the episode in an extra column
-tng_series_scripts_cleaned['title'] = all_series_scripts.TNG.map(get_title)
+
 
 tng_series_scripts_cleaned.to_pickle('cleaned_tng_scripts.pkl')

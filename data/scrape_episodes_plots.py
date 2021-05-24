@@ -1,8 +1,8 @@
 """Webscrape the plot descriptions for the episodes from Wikipedia."""
-from os import write
+
 import requests
 import bs4
-import webbrowser
+
 from pathlib import Path
 import re
 

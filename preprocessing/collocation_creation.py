@@ -1,5 +1,6 @@
 """ Script to create ngrams based on their collocations."""
 import pandas as pd
+import spacy
 from pathlib import Path
 from gensim.models.phrases import Phrases
 from gensim.models.phrases import Phraser
@@ -11,12 +12,18 @@ tng_series_scripts_cleaned = pd.read_pickle(path_to_data / Path('cleaned_tng_scr
 text = ''
 for index, episode_text in tng_series_scripts_cleaned.EpisodeText.items():
     text += episode_text
+for index, plot_description in tng_series_scripts_cleaned['wiki_plot'].items():
+    text += plot_description
 
+nlp = spacy.load('en_core_web_sm')
 # prepare for collocation determination
 sentences = sent_tokenize(text)
-word_tokenized_sentences = [word_tokenize(sentence) for sentence in sentences]
+wordtokenized_lemmatized_sentences = []
+for sentence in sentences:
+    wordtokenized_lemmatized_sentences.append([token.lemma_ for token in nlp(sentence)])
 
-bigrams = Phrases(word_tokenized_sentences)
+
+bigrams = Phrases(wordtokenized_lemmatized_sentences)
 
 
 

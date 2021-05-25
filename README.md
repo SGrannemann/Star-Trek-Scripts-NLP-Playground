@@ -16,6 +16,7 @@ In this folder, you can find multiple IPython Notebooks for an initial, simple a
 In this folder, you can find the raw data as well as artifacts generated for the different steps of the projects: Serialized DataFrames, collocation models etc.
 Scripts for collecting additional data can be found here as well.
 
+
 # Preprocessing
 In this folder, you can find scripts that preprocess the data, either for extracting the text from the original files or for cleaning up text data etc.
 
@@ -28,6 +29,9 @@ In this folder, you can find scripts that preprocess the data, either for extrac
 ## Data collection and cleaning
 This playground currently uses the following data:
 - A dataset with the scripts of the episodes, taken from here: https://www.kaggle.com/gjbroughton/start-trek-scripts
+
+- A dataset of plot descriptions that I scraped from the Wikipedia articles. The scripts for downloading the files and extracting the actual descriptions of the plots can be found in the data folder.
+
 
 
 The _use cases_ that are currently planned are:

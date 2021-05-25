@@ -1,19 +1,26 @@
-"""Cleans the scripts of the episodes and combines tokens into bigrams.
+"""Cleans the scripts of the episodes and combines tokens into bigrams. Adds the Wikipedia plot data (see data folder) to the dataframe.
 Creates a serialized version of a dataframe that contains both the cleaned text as well as the cleand text with bigrams."""
 import pandas as pd
 from gensim.models.phrases import Phraser
 from nltk.tokenize import word_tokenize
 from pathlib import Path
 import re
+import spacy
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# TODO: Add plot descriptions from wikipedia to dataframe.
+# paths for data
 PATH_TO_DATA = Path.cwd() / Path('data')
 FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('tng') / Path('processed')
+
 # the following two booleans are used to know if the first part of the double episodes has already been processed
+# those are two part episodes that were hard to handle.
 bestOfBoth = False
 chainOfCommand = False
+
+# setup spacy language model
+nlp = spacy.load('en_core_web_sm')
+
 def remove_speakers_and_empty_lines(episode_content: str) -> str:
     """Removes superfluous empty lines and the names of the speakers from the input data:
     e.g. :
@@ -46,24 +53,32 @@ def remove_speakers_and_empty_lines(episode_content: str) -> str:
     return ''.join(cleaned_lines)
 
 def get_title(episode_content:str) -> str:
+    """Function that extracts the title of an episode from the scripts. 
+    This allows finding the correct plot description from Wikipedia later on.
+    Contains a lot of hardcoded cases because spelling etc. was very heterogenous."""
+    # we need those boolean flags to know whether we already processed that episodes once
     global bestOfBoth
     global chainOfCommand
+
     title = ''
     for line in episode_content.split('\n'):
         # find the title
         if 'Transcripts' in line:
             title = line.split('-')[1].lower().strip()
     if 'part' in title:
-        # TODO: Finish RegEx to add a comma before part
+        # this replaces all ' part ' partial strings with ', part' which is the format used by the Wikipedia articles
         title = re.sub(r'\spart\s', ', part ', title)
         title = re.sub(r'\s1', ' i', title)
         title = re.sub(r'\s2', ' ii', title)
     if 'honour' in title:
+        # switch to american english spelling
         title = title.replace('honour', 'honor')
 
     if title == '':
+        # somehow the script for the episode Peak Performance does not contain a title
         title = 'peak performance'
     
+    # the following if statements are used to adjust the titles from the scripts to the spelling of the Wiki articles.
     if title == 'all good things':
         title += '...'
     if title == 'who watches the':
@@ -92,39 +107,58 @@ def get_title(episode_content:str) -> str:
         chainOfCommand = True
     return title
 
-all_series_scripts = pd.read_json(PATH_TO_DATA / Path('all_scripts_raw.json'))
 
-# remove the names of the speakers and get rid of the empty lines
+if __name__ == '__main__':
+    all_series_scripts = pd.read_json(PATH_TO_DATA / Path('all_scripts_raw.json'))
 
-tng_series_scripts_cleaned = all_series_scripts.TNG.map(remove_speakers_and_empty_lines)
-tng_series_scripts_cleaned = pd.DataFrame({'EpisodeText' : tng_series_scripts_cleaned})
-tng_series_scripts_cleaned['title'] = all_series_scripts.TNG.map(get_title)
+    # remove the names of the speakers and get rid of the empty lines
 
-print(tng_series_scripts_cleaned.head(10))
-tng_series_scripts_cleaned.set_index('title', inplace=True)
+    tng_series_scripts_cleaned = all_series_scripts.TNG.map(remove_speakers_and_empty_lines)
+    tng_series_scripts_cleaned = pd.DataFrame({'EpisodeText' : tng_series_scripts_cleaned})
+    tng_series_scripts_cleaned['title'] = all_series_scripts.TNG.map(get_title)
+
+    # set the index of the dataframe to title for easy combination with the Wiki articles later on
+    tng_series_scripts_cleaned.set_index('title', inplace=True)
+
+    # variables to keep track of the wiki articles we read in
+    plots = []
+    titles = []
+    # grab the plot descriptions from the files
+    for plot_description_file in FOLDER_FOR_SAVING.glob('*.txt'):
+        title = plot_description_file.stem
+        with open(plot_description_file, 'r') as episode_file:
+            plot = episode_file.read()
+            titles.append(title.lower())
+            plots.append(plot)
+
+    # add the plot descriptions to the dataframe        
+    wiki_plots = pd.Series(plots, index=titles, dtype='string')
+    tng_series_scripts_cleaned = tng_series_scripts_cleaned.assign(wiki_plot=wiki_plots)
+
+    # check for bad values
+    if tng_series_scripts_cleaned.wiki_plot.isnull().sum() != 0:
+        print('NaN entries found. Check your data!')
+    
+    # reset the index
+    tng_series_scripts_cleaned.reset_index(inplace=True)
+
+    # the index does not match the episode number: both the first and last episode have one script (thus only one row in the dataframe), but count as two episodes each. 
+    # i.e. the first episode after the initial two-part episode has number 3
+    # to be able to easily access the correct episode_number later on, we add a new column with the correct episode number
+    true_episode_numbers = [i for i in range(1,178)]
+    true_episode_numbers.remove(2)
+    true_episode_numbers_series = pd.Series(true_episode_numbers)
+    tng_series_scripts_cleaned = tng_series_scripts_cleaned.assign(episode_number=true_episode_numbers)
+
+    
+    
+    # use the bigram model to combine tokens into bigrams if appropriate
+    bigrams = Phraser.load(str(PATH_TO_DATA) + '\\bigram_model.pkl')
+    # TODO: text with bigrams should first concat script and plot description, then use the phraser.
+    tng_series_scripts_cleaned['complete_text'] = tng_series_scripts_cleaned['EpisodeText'] + tng_series_scripts_cleaned['wiki_plot']
+    tng_series_scripts_cleaned['complete_text'] = tng_series_scripts_cleaned['complete_text'].apply(lambda x: ' '.join([token.lemma_ for token in nlp(x) if token not in [' ', '\n']]))
+    tng_series_scripts_cleaned['complete_text_with_bigrams'] =  [' '.join(bigrams[word_tokenize(episode_text)]) for episode_text in tng_series_scripts_cleaned.EpisodeText]
+    
 
 
-plots = []
-titles = []
-
-for plot_description_file in FOLDER_FOR_SAVING.glob('*.txt'):
-    title = plot_description_file.stem
-    with open(plot_description_file, 'r') as episode_file:
-        plot = episode_file.read()
-        titles.append(title.lower())
-        plots.append(plot)
-wiki_plots = pd.Series(plots, index=titles, dtype='string')
-tng_series_scripts_cleaned = tng_series_scripts_cleaned.assign(wiki_plot=wiki_plots)
-print(tng_series_scripts_cleaned.head(100))
-nan_frame = tng_series_scripts_cleaned[tng_series_scripts_cleaned.isna().any(axis=1)]
-print(nan_frame)
-print(tng_series_scripts_cleaned.wiki_plot.isnull().sum())
-
-# use the bigram model to combine tokens into bigrams if appropriate
-#bigrams = Phraser.load(str(PATH_TO_DATA) + '\\bigram_model.pkl')
-# TODO: text with bigrams should first concat script and plot description, then use the phraser.
-#stng_series_scripts_cleaned['text with bigrams'] =  [' '.join(bigrams[word_tokenize(episode_text)]) for episode_text in tng_series_scripts_cleaned.EpisodeText]
-# get the title of the episode in an extra column
-
-
-tng_series_scripts_cleaned.to_pickle('cleaned_tng_scripts.pkl')
+    tng_series_scripts_cleaned.to_pickle(str(PATH_TO_DATA) + '\cleaned_tng_scripts.pkl')

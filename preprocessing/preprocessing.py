@@ -2,7 +2,7 @@
 Creates a serialized version of a dataframe that contains both the cleaned text as well as the cleand text with bigrams."""
 import pandas as pd
 from gensim.models.phrases import Phraser
-from nltk.tokenize import word_tokenize
+from nltk.tokenize import sent_tokenize
 from pathlib import Path
 import re
 import spacy
@@ -100,6 +100,18 @@ def get_title(episode_content:str) -> str:
     return title
 
 
+def combine_to_bigrams(complete_text: str) -> str:
+    """function that combines bigrams from the text where appropriate. Returns string with combined bigrams."""
+    sentences = sent_tokenize(complete_text)
+    bigram_episode = []
+    for sentence in sentences:
+        tokens = [token.lemma_ for token in nlp(sentence) if token.text not in [' ', '\n']]
+        bigram_tokens = bigrams[tokens]
+        bigram_episode.append(' '.join(bigram_tokens))
+    return ' '.join(bigram_episode)
+
+
+
 if __name__ == '__main__':
     # paths for data
     PATH_TO_DATA = Path.cwd() / Path('data')
@@ -159,9 +171,12 @@ if __name__ == '__main__':
     # use the bigram model to combine tokens into bigrams if appropriate
     bigrams = Phraser.load(str(PATH_TO_DATA) + '\\bigram_model.pkl')
     
+    # combine the script and the plot description
     tng_series_scripts_cleaned['complete_text'] = tng_series_scripts_cleaned['EpisodeText'] + tng_series_scripts_cleaned['wiki_plot']
-    tng_series_scripts_cleaned['complete_text'] = tng_series_scripts_cleaned['complete_text'].apply(lambda x: ' '.join([token.lemma_ for token in nlp(x) if token not in [' ', '\n']]))
-    tng_series_scripts_cleaned['complete_text_with_bigrams'] =  [' '.join(bigrams[word_tokenize(episode_text)]) for episode_text in tng_series_scripts_cleaned.EpisodeText]
+    # lemmatize them and remove empty strings as well as newline chars.
+    
+    tng_series_scripts_cleaned['complete_text_with_bigrams'] =  tng_series_scripts_cleaned['complete_text'].apply(combine_to_bigrams)
+    
     
 
 

@@ -9,17 +9,9 @@ import spacy
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# paths for data
-PATH_TO_DATA = Path.cwd() / Path('data')
-FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('tng') / Path('processed')
 
-# the following two booleans are used to know if the first part of the double episodes has already been processed
-# those are two part episodes that were hard to handle.
-bestOfBoth = False
-chainOfCommand = False
 
-# setup spacy language model
-nlp = spacy.load('en_core_web_sm')
+
 
 def remove_speakers_and_empty_lines(episode_content: str) -> str:
     """Removes superfluous empty lines and the names of the speakers from the input data:
@@ -109,9 +101,21 @@ def get_title(episode_content:str) -> str:
 
 
 if __name__ == '__main__':
+    # paths for data
+    PATH_TO_DATA = Path.cwd() / Path('data')
+    FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('tng') / Path('processed')
+    # setup spacy language model
+    nlp = spacy.load('en_core_web_sm')
+
+    # the following two booleans are used to know if the first part of the double episodes has already been processed
+    # those are two part episodes that were hard to handle.
+    bestOfBoth = False
+    chainOfCommand = False
+
+    # read in scripts from the json file
     all_series_scripts = pd.read_json(PATH_TO_DATA / Path('all_scripts_raw.json'))
 
-    # remove the names of the speakers and get rid of the empty lines
+    # remove the names of the speakers and get rid of the empty lines and get the titles of the episodes
 
     tng_series_scripts_cleaned = all_series_scripts.TNG.map(remove_speakers_and_empty_lines)
     tng_series_scripts_cleaned = pd.DataFrame({'EpisodeText' : tng_series_scripts_cleaned})
@@ -154,7 +158,7 @@ if __name__ == '__main__':
     
     # use the bigram model to combine tokens into bigrams if appropriate
     bigrams = Phraser.load(str(PATH_TO_DATA) + '\\bigram_model.pkl')
-    # TODO: text with bigrams should first concat script and plot description, then use the phraser.
+    
     tng_series_scripts_cleaned['complete_text'] = tng_series_scripts_cleaned['EpisodeText'] + tng_series_scripts_cleaned['wiki_plot']
     tng_series_scripts_cleaned['complete_text'] = tng_series_scripts_cleaned['complete_text'].apply(lambda x: ' '.join([token.lemma_ for token in nlp(x) if token not in [' ', '\n']]))
     tng_series_scripts_cleaned['complete_text_with_bigrams'] =  [' '.join(bigrams[word_tokenize(episode_text)]) for episode_text in tng_series_scripts_cleaned.EpisodeText]

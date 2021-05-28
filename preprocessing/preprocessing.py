@@ -5,11 +5,15 @@ from gensim.models.phrases import Phraser
 from nltk.tokenize import sent_tokenize
 from pathlib import Path
 import re
+from pandas.core.frame import DataFrame
 import spacy
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
+# TODO: Add Column for the show to the dataframe.
+# TODO: Improve function DocStrings.
+# TODO: Evaluate for DS9.
+# TODO: Evalute for VOY
 
 
 
@@ -111,36 +115,19 @@ def combine_to_bigrams(complete_text: str) -> str:
     return ' '.join(bigram_episode)
 
 
-
-if __name__ == '__main__':
-    # paths for data
-    PATH_TO_DATA = Path.cwd() / Path('data')
-    FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('tng') / Path('processed')
-    # setup spacy language model
-    nlp = spacy.load('en_core_web_sm')
-
-    # the following two booleans are used to know if the first part of the double episodes has already been processed
-    # those are two part episodes that were hard to handle.
-    bestOfBoth = False
-    chainOfCommand = False
-
-    # read in scripts from the json file
-    all_series_scripts = pd.read_json(PATH_TO_DATA / Path('all_scripts_raw.json'))
-
-    # remove the names of the speakers and get rid of the empty lines and get the titles of the episodes
-
-    tng_series_scripts_cleaned = all_series_scripts.TNG.map(remove_speakers_and_empty_lines)
-    tng_series_scripts_cleaned = pd.DataFrame({'EpisodeText' : tng_series_scripts_cleaned})
-    tng_series_scripts_cleaned['title'] = all_series_scripts.TNG.map(get_title)
-
+def get_wiki_plots(show_scripts: DataFrame, show:str) -> DataFrame:
+    """Adds the Wiki plot descriptions to the dataframe and returns it with plot descriptions."""
     # set the index of the dataframe to title for easy combination with the Wiki articles later on
-    tng_series_scripts_cleaned.set_index('title', inplace=True)
+    show_scripts.set_index('Title', inplace=True)
+
+    # construct path to saved data
+    folder_for_saving = Path.cwd() / Path('data') / Path('scraped') / Path(show) / Path('processed')
 
     # variables to keep track of the wiki articles we read in
     plots = []
     titles = []
     # grab the plot descriptions from the files
-    for plot_description_file in FOLDER_FOR_SAVING.glob('*.txt'):
+    for plot_description_file in folder_for_saving.glob('*.txt'):
         title = plot_description_file.stem
         with open(plot_description_file, 'r') as episode_file:
             plot = episode_file.read()
@@ -149,35 +136,82 @@ if __name__ == '__main__':
 
     # add the plot descriptions to the dataframe        
     wiki_plots = pd.Series(plots, index=titles, dtype='string')
-    tng_series_scripts_cleaned = tng_series_scripts_cleaned.assign(wiki_plot=wiki_plots)
+    show_scripts = show_scripts.assign(Wiki_plot=wiki_plots)
 
     # check for bad values
-    if tng_series_scripts_cleaned.wiki_plot.isnull().sum() != 0:
+    if show_scripts.Wiki_plot.isnull().sum() != 0:
         print('NaN entries found. Check your data!')
     
     # reset the index
-    tng_series_scripts_cleaned.reset_index(inplace=True)
+    show_scripts.reset_index(inplace=True)
 
-    # the index does not match the episode number: both the first and last episode have one script (thus only one row in the dataframe), but count as two episodes each. 
-    # i.e. the first episode after the initial two-part episode has number 3
-    # to be able to easily access the correct episode_number later on, we add a new column with the correct episode number
-    true_episode_numbers = [i for i in range(1,178)]
-    true_episode_numbers.remove(2)
-    true_episode_numbers_series = pd.Series(true_episode_numbers)
-    tng_series_scripts_cleaned = tng_series_scripts_cleaned.assign(episode_number=true_episode_numbers)
+    return show_scripts
 
+def create_dataframe_for_show(all_scripts: DataFrame, show:str) -> DataFrame:
+    """Creates a DataFrame for the different shows, including removing speakers and empty lines, correcting the episode numbering and
+    adding the plot descriptions from Wikipedia."""
+
+    # remove the names of the speakers and get rid of the empty lines and get the titles of the episodes
+    if show == 'tng':
+        
+        show_scripts_cleaned = all_scripts.TNG.map(remove_speakers_and_empty_lines)
+        show_titles = all_scripts.TNG.map(get_title)
+        # the index does not match the episode number: both the first and last episode have one script (thus only one row in the dataframe), but count as two episodes each. 
+        # i.e. the first episode after the initial two-part episode has number 3
+        # to be able to easily access the correct episode_number later on, we add a new column with the correct episode number
+        true_episode_numbers = [i for i in range(1,178)]
+        true_episode_numbers.remove(2)
+        true_episode_numbers_series = pd.Series(true_episode_numbers, index=show_scripts_cleaned.index)
+    elif show == 'voy':
+        show_scripts_cleaned = all_scripts.VOY.map(remove_speakers_and_empty_lines)
+        show_titles = all_scripts.VOY.map(get_title)
+    elif show == 'ds9':
+        show_scripts_cleaned = all_scripts.DS9.map(remove_speakers_and_empty_lines)
+        show_titles = all_scripts.DS9.map(get_title)
+    else:
+        print('Unknown show...')
+        exit()
+
+    show_scripts_cleaned = pd.DataFrame({'EpisodeText' : show_scripts_cleaned, 'Title' : show_titles, 'Episode_Number': true_episode_numbers_series}, index=show_scripts_cleaned.index)
+    show_scripts_cleaned_wiki = get_wiki_plots(show_scripts_cleaned, show)
+    return show_scripts_cleaned_wiki
+
+if __name__ == '__main__':
+    # paths for data
+    PATH_TO_DATA = Path.cwd() / Path('data')
+    
+    # setup spacy language model
+    nlp = spacy.load('en_core_web_sm')
+
+    # read in scripts from the json file
+    all_series_scripts = pd.read_json(PATH_TO_DATA / Path('all_scripts_raw.json'))
+    
+    # the following two booleans are used to know if the first part of the double episodes has already been processed
+    # those are two part episodes that were hard to handle.
+    bestOfBoth = False
+    chainOfCommand = False
+
+    # create empty dataframe
+    complete_frame = pd.DataFrame(columns=['EpisodeText', 'Title', 'Episode_Number', 'Wiki_plot'])
+    # combine the empty frame with the frames from the different shows.
+    for show in ['tng']:
+        complete_frame = pd.concat([complete_frame, create_dataframe_for_show(all_series_scripts, show)], ignore_index=True)
+    print(complete_frame.head())
     
     
+    
+
+
     # use the bigram model to combine tokens into bigrams if appropriate
-    bigrams = Phraser.load(str(PATH_TO_DATA) + '\\bigram_model.pkl')
+    # bigrams = Phraser.load(str(PATH_TO_DATA) + '\\bigram_model.pkl')
     
-    # combine the script and the plot description
-    tng_series_scripts_cleaned['complete_text'] = tng_series_scripts_cleaned['EpisodeText'] + tng_series_scripts_cleaned['wiki_plot']
-    # lemmatize them and remove empty strings as well as newline chars.
+    # # combine the script and the plot description
+    # tng_series_scripts_cleaned['complete_text'] = tng_series_scripts_cleaned['EpisodeText'] + tng_series_scripts_cleaned['wiki_plot']
+    # # lemmatize them and remove empty strings as well as newline chars.
     
-    tng_series_scripts_cleaned['complete_text_with_bigrams'] =  tng_series_scripts_cleaned['complete_text'].apply(combine_to_bigrams)
+    # tng_series_scripts_cleaned['complete_text_with_bigrams'] =  tng_series_scripts_cleaned['complete_text'].apply(combine_to_bigrams)
     
     
 
 
-    tng_series_scripts_cleaned.to_pickle(str(PATH_TO_DATA) + '\cleaned_tng_scripts.pkl')
+    #tng_series_scripts_cleaned.to_pickle(str(PATH_TO_DATA) + '\cleaned_tng_scripts.pkl')

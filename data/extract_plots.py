@@ -4,8 +4,12 @@ import re
 from pathlib import Path\
 
 # set the series folder here
-FOLDER_TO_WIKIDATA = Path.cwd() / Path('data') / Path('scraped') / Path('tng')
-FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('tng') / Path('processed')
+#FOLDER_TO_WIKIDATA = Path.cwd() / Path('data') / Path('scraped') / Path('tng')
+#FOLDER_TO_WIKIDATA = Path.cwd() / Path('data') / Path('scraped') / Path('voy')
+FOLDER_TO_WIKIDATA = Path.cwd() / Path('data') / Path('scraped') / Path('ds9')
+#FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('tng') / Path('processed')
+#FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('voy') / Path('processed')
+FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('ds9') / Path('processed')
 for wikipage in FOLDER_TO_WIKIDATA.glob('*.txt'):
     with open(wikipage, 'r', encoding='utf-8') as episode_document:
         title = wikipage.name

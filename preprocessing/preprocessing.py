@@ -129,7 +129,7 @@ def get_wiki_plots(show_scripts: DataFrame, show:str) -> DataFrame:
     # grab the plot descriptions from the files
     for plot_description_file in folder_for_saving.glob('*.txt'):
         title = plot_description_file.stem
-        with open(plot_description_file, 'r') as episode_file:
+        with open(plot_description_file, 'r', encoding='utf-8') as episode_file:
             plot = episode_file.read()
             titles.append(title.lower())
             plots.append(plot)
@@ -141,6 +141,8 @@ def get_wiki_plots(show_scripts: DataFrame, show:str) -> DataFrame:
     # check for bad values
     if show_scripts.Wiki_plot.isnull().sum() != 0:
         print('NaN entries found. Check your data!')
+        print('Wiki plots without match for {}:'.format(show))
+        print(show_scripts[show_scripts.Wiki_plot.isnull()])
     
     # reset the index
     show_scripts.reset_index(inplace=True)
@@ -159,9 +161,7 @@ def create_dataframe_for_show(all_scripts: DataFrame, show:str) -> DataFrame:
         # the index does not match the episode number: both the first and last episode have one script (thus only one row in the dataframe), but count as two episodes each. 
         # i.e. the first episode after the initial two-part episode has number 3
         # to be able to easily access the correct episode_number later on, we add a new column with the correct episode number
-        true_episode_numbers = [i for i in range(1,178)]
-        true_episode_numbers.remove(2)
-        true_episode_numbers_series = pd.Series(true_episode_numbers, index=show_scripts_cleaned.index)
+        
     elif show == 'voy':
         show_scripts_cleaned = all_scripts.VOY.map(remove_speakers_and_empty_lines)
         show_titles = all_scripts.VOY.map(get_title)
@@ -171,7 +171,9 @@ def create_dataframe_for_show(all_scripts: DataFrame, show:str) -> DataFrame:
     else:
         print('Unknown show...')
         exit()
-
+    true_episode_numbers = [i for i in range(1,178)]
+    true_episode_numbers.remove(2)
+    true_episode_numbers_series = pd.Series(true_episode_numbers, index=show_scripts_cleaned.index)
     show_scripts_cleaned = pd.DataFrame({'EpisodeText' : show_scripts_cleaned, 'Title' : show_titles, 'Episode_Number': true_episode_numbers_series}, index=show_scripts_cleaned.index)
     show_scripts_cleaned_wiki = get_wiki_plots(show_scripts_cleaned, show)
     return show_scripts_cleaned_wiki
@@ -185,6 +187,7 @@ if __name__ == '__main__':
 
     # read in scripts from the json file
     all_series_scripts = pd.read_json(PATH_TO_DATA / Path('all_scripts_raw.json'))
+    all_series_scripts.fillna('', inplace=True)
     
     # the following two booleans are used to know if the first part of the double episodes has already been processed
     # those are two part episodes that were hard to handle.
@@ -194,7 +197,7 @@ if __name__ == '__main__':
     # create empty dataframe
     complete_frame = pd.DataFrame(columns=['EpisodeText', 'Title', 'Episode_Number', 'Wiki_plot'])
     # combine the empty frame with the frames from the different shows.
-    for show in ['tng']:
+    for show in ['tng', 'voy', 'ds9']:
         complete_frame = pd.concat([complete_frame, create_dataframe_for_show(all_series_scripts, show)], ignore_index=True)
     print(complete_frame.head())
     

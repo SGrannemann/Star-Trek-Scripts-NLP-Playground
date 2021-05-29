@@ -6,11 +6,17 @@ import bs4
 from pathlib import Path
 import re
 
-path_to_save_files = Path.cwd() / Path('data') / Path('scraped') / Path('tng')
-SERIES_TITLE_PATTERN = r' \(Star Trek: The Next Generation\)' 
-
+# edit here to scrape other shows
+#path_to_save_files = Path.cwd() / Path('data') / Path('scraped') / Path('tng')
+#path_to_save_files = Path.cwd() / Path('data') / Path('scraped') / Path('voy')
+path_to_save_files = Path.cwd() / Path('data') / Path('scraped') / Path('ds9')
+#SERIES_TITLE_PATTERN = r' \(Star Trek: The Next Generation\)' 
+#SERIES_TITLE_PATTERN = r' \(Star Trek: Voyager\)' 
+SERIES_TITLE_PATTERN = r' \(Star Trek: Deep Space Nine\)'
 # open the list of next gen episodes and convert to bs4 
-response_object = requests.get('https://en.wikipedia.org/wiki/List_of_Star_Trek:_The_Next_Generation_episodes')
+response_object = requests.get('https://en.wikipedia.org/wiki/List_of_Star_Trek:_Deep_Space_Nine_episodes')
+#response_object = requests.get('https://en.wikipedia.org/wiki/List_of_Star_Trek:_Voyager_episodes')
+#response_object = requests.get('https://en.wikipedia.org/wiki/List_of_Star_Trek:_The_Next_Generation_episodes')
 response_object.raise_for_status()
 soup = bs4.BeautifulSoup(response_object.text, 'html.parser')
 
@@ -24,6 +30,8 @@ links_to_episodes = ['http://en.wikipedia.org' + extracted_link.get('href') for 
 
 episode_titles = [extracted_link.text for extracted_link in extracted_links]
 episode_titles_no_series_title = [re.sub(SERIES_TITLE_PATTERN, '', title) for title in episode_titles]
+# remove : and ? from titles to prevent messing up file saving.
+episode_titles_no_series_title = [re.sub(r':|\?', '_', title) for title in episode_titles_no_series_title]
 titles_and_links = list(zip(episode_titles_no_series_title, links_to_episodes))
 
 # for each of these links save the webpage it points to

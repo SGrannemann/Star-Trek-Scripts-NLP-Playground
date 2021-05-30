@@ -31,7 +31,7 @@ links_to_episodes = ['http://en.wikipedia.org' + extracted_link.get('href') for 
 episode_titles = [extracted_link.text for extracted_link in extracted_links]
 episode_titles_no_series_title = [re.sub(SERIES_TITLE_PATTERN, '', title) for title in episode_titles]
 # remove : and ? from titles to prevent messing up file saving.
-episode_titles_no_series_title = [re.sub(r':|\?', '_', title) for title in episode_titles_no_series_title]
+episode_titles_no_series_title = [re.sub(r':|\?', ' ', title) for title in episode_titles_no_series_title]
 titles_and_links = list(zip(episode_titles_no_series_title, links_to_episodes))
 
 # for each of these links save the webpage it points to

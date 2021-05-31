@@ -8,11 +8,11 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 
 # first read in the text and add it all together.
 path_to_data = Path.cwd() / Path('data')
-tng_series_scripts_cleaned = pd.read_pickle(path_to_data / Path('cleaned_tng_scripts.pkl'))
+scripts_and_plots  = pd.read_pickle(path_to_data / Path('scripts_and_plots.pkl'))
 text = ''
-for index, episode_text in tng_series_scripts_cleaned.EpisodeText.items():
+for index, episode_text in scripts_and_plots.EpisodeText.items():
     text += episode_text
-for index, plot_description in tng_series_scripts_cleaned['wiki_plot'].items():
+for index, plot_description in scripts_and_plots['Wiki_plot'].items():
     text += plot_description
 
 nlp = spacy.load('en_core_web_sm')

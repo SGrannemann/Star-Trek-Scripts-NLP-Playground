@@ -66,21 +66,29 @@ def get_title(episode_content:str) -> str:
         title = re.sub(r'\spart\s', ', part ', title)
         title = re.sub(r'\s1', ' i', title)
         title = re.sub(r'\s2', ' ii', title)
+        # remove double comma - the transcripts are really inconsistent in whether or not its Title, Part 1 or Title Part 1 
+        title = re.sub(r',,', ',', title)
     if 'honour' in title:
         # switch to american english spelling
         title = title.replace('honour', 'honor')
-
-    if title == '':
+    if 'favour' in title:
+        title = title.replace('favour', 'favor')
+    if title == '' and show == 'tng':
         # somehow the script for the episode Peak Performance does not contain a title
         title = 'peak performance'
-    
+    if title == '' and show == 'voy':
+        # somehow the script for the episode Scientific Method does not contain a title
+        title = 'scientific method'
+
     # the following if statements are used to adjust the titles from the scripts to the spelling of the Wiki articles.
     if title == 'all good things':
         title += '...'
     if title == 'who watches the':
         title += ' watchers'
-    if title == 'q who?':
-        title = title.strip('?')
+    #if title == 'q who?':
+    #    title = title.strip('?')
+    if '?' in title:
+        title = re.sub(r'\?', '', title)
     if title == 'menage a troi':
         title = 'ménage à troi'
     if title == 'redemption':
@@ -101,6 +109,56 @@ def get_title(episode_content:str) -> str:
     if title == 'chain of command, part' and not chainOfCommand:
         title = 'chain of command, part i'
         chainOfCommand = True
+    if title == 'course: oblivion':
+        title = 'course oblivion'
+    if title == '11:59':
+        title = '11 59'
+    if title == 'vis a vis':
+        title = 'vis à vis'
+    if title == 'q':
+        title = 'q-less'
+    if title == 'in the hands of the':
+        title = 'in the hands of the prophets'
+    if title == 'through the looking':
+        title = 'through the looking glass'
+    if title == 'the sons of mogh':
+        title = 'sons of mogh'
+    if title == "looking for par'mach":
+        title = "looking for par'mach in all the wrong places"
+    if title == 'nor the battle to the':
+        title = '...nor the battle to the strong'
+    if title == 'trials and':
+        title = 'trials and tribble-ations'
+    if title ==  'let he who is without':
+        title += ' sin...'
+    if title == 'the darkness and the':
+        title += ' light'
+    if title == 'doctor bashir, i':
+        title += ' presume'
+    if title == 'you are cordially':
+        title += ' invited'
+    if title == 'statistical':
+        title += ' probabilities'
+    if title == 'wrongs darker than':
+        title += ' death or night'
+    if title == 'take me out to the':
+        title += ' holosuite'
+    if title == 'treachery, faith and':
+        title += ' the great river'
+    if title == 'once more unto the':
+        title += ' breach'
+    if title == 'siege of ar':
+        title = 'the siege of ar-558'
+    if title == 'badda':
+        title = 'badda-bing badda-bang'
+    if title == 'inter arma enim silent':
+        title += ' leges'
+    if title == 'till death us do part':
+        title = "'til death do us part"
+    if title == 'the changing face of':
+        title += ' evil'
+    if title == 'improbable cause':
+        title = 'improbable cause'
     return title
 
 
@@ -131,8 +189,26 @@ def get_wiki_plots(show_scripts: DataFrame, show:str) -> DataFrame:
         title = plot_description_file.stem
         with open(plot_description_file, 'r', encoding='utf-8') as episode_file:
             plot = episode_file.read()
-            titles.append(title.lower())
-            plots.append(plot)
+            # map the scripts from DS9 for two-part episodes to the correct wiki entry. Somehow in the Wiki entry these were done differently
+            # than for the other shows. e.g. : For TNG the wiki entry always states "Title, Part I" / "Title, Part, II". For DS9 it is "Title," "Part I" :(
+            if title.lower() == 'the maquis':
+                titles.append('the maquis, part i')
+                titles.append('the maquis, part ii')
+                plots.append(plot)
+                plots.append(plot)
+            elif title.lower() == 'the search':
+                titles.append('the search, part i')
+                titles.append('the search, part ii')
+                plots.append(plot)
+                plots.append(plot)
+            elif title.lower() == 'past tense':
+                titles.append('past tense, part i')
+                titles.append('past tense, part ii')
+                plots.append(plot)
+                plots.append(plot)
+            else:
+                titles.append(title.lower())
+                plots.append(plot)
 
     # add the plot descriptions to the dataframe        
     wiki_plots = pd.Series(plots, index=titles, dtype='string')
@@ -155,26 +231,33 @@ def create_dataframe_for_show(all_scripts: DataFrame, show:str) -> DataFrame:
 
     # remove the names of the speakers and get rid of the empty lines and get the titles of the episodes
     if show == 'tng':
-        
-        show_scripts_cleaned = all_scripts.TNG.map(remove_speakers_and_empty_lines)
-        show_titles = all_scripts.TNG.map(get_title)
-        # the index does not match the episode number: both the first and last episode have one script (thus only one row in the dataframe), but count as two episodes each. 
-        # i.e. the first episode after the initial two-part episode has number 3
-        # to be able to easily access the correct episode_number later on, we add a new column with the correct episode number
+        show_scripts = all_scripts.TNG
+      
         
     elif show == 'voy':
-        show_scripts_cleaned = all_scripts.VOY.map(remove_speakers_and_empty_lines)
-        show_titles = all_scripts.VOY.map(get_title)
+
+        show_scripts = all_scripts.VOY
+        # TNG has more episodes than the other shows so the pd.Series objects for the shorter shows have NaN values. Drop them.
+        show_scripts = show_scripts.dropna()
+        
+
     elif show == 'ds9':
-        show_scripts_cleaned = all_scripts.DS9.map(remove_speakers_and_empty_lines)
-        show_titles = all_scripts.DS9.map(get_title)
+        show_scripts = all_scripts.DS9
+        show_scripts = show_scripts.dropna()
+       
+        
+
     else:
         print('Unknown show...')
         exit()
-    true_episode_numbers = [i for i in range(1,178)]
-    true_episode_numbers.remove(2)
-    true_episode_numbers_series = pd.Series(true_episode_numbers, index=show_scripts_cleaned.index)
-    show_scripts_cleaned = pd.DataFrame({'EpisodeText' : show_scripts_cleaned, 'Title' : show_titles, 'Episode_Number': true_episode_numbers_series}, index=show_scripts_cleaned.index)
+
+    show_scripts_cleaned = show_scripts.map(remove_speakers_and_empty_lines)
+    show_titles = show_scripts.map(get_title)
+    
+    
+
+    show_scripts_cleaned = pd.DataFrame({'EpisodeText' : show_scripts_cleaned, 'Title' : show_titles}, index=show_scripts_cleaned.index)
+    show_scripts_cleaned['Show'] = show.upper()
     show_scripts_cleaned_wiki = get_wiki_plots(show_scripts_cleaned, show)
     return show_scripts_cleaned_wiki
 
@@ -187,7 +270,7 @@ if __name__ == '__main__':
 
     # read in scripts from the json file
     all_series_scripts = pd.read_json(PATH_TO_DATA / Path('all_scripts_raw.json'))
-    all_series_scripts.fillna('', inplace=True)
+    
     
     # the following two booleans are used to know if the first part of the double episodes has already been processed
     # those are two part episodes that were hard to handle.
@@ -195,9 +278,10 @@ if __name__ == '__main__':
     chainOfCommand = False
 
     # create empty dataframe
-    complete_frame = pd.DataFrame(columns=['EpisodeText', 'Title', 'Episode_Number', 'Wiki_plot'])
-    # combine the empty frame with the frames from the different shows.
-    for show in ['tng', 'voy', 'ds9']:
+    complete_frame = pd.DataFrame(columns=['EpisodeText', 'Title', 'Wiki_plot', 'Show'])
+    # combine the empty frame with the frames from the different shows. 
+    # we build one DataFrame where each episode is a row (so the first 176 rows should be TNG, followed by DS9 ,...)
+    for show in ['tng', 'ds9', 'voy']:
         complete_frame = pd.concat([complete_frame, create_dataframe_for_show(all_series_scripts, show)], ignore_index=True)
     print(complete_frame.head())
     
@@ -217,4 +301,4 @@ if __name__ == '__main__':
     
 
 
-    #tng_series_scripts_cleaned.to_pickle(str(PATH_TO_DATA) + '\cleaned_tng_scripts.pkl')
+    complete_frame.to_pickle(str(PATH_TO_DATA) + '\scripts_and_plots.pkl')

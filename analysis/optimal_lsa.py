@@ -8,23 +8,24 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pathlib import Path
 
 
 
 
 
+PATH_TO_DATA = Path.cwd() / Path('data')
+bigrams = Phraser.load(str(PATH_TO_DATA) + '\\bigram_model.pkl')
 
-bigrams = Phraser.load('bigram_model.pkl')
-
-tng_series_scripts_cleaned = pd.read_pickle('cleaned_tng_scripts.pkl')
+scripts_cleaned = pd.read_pickle(PATH_TO_DATA / Path('scripts_and_plots.pkl'))
 
 tfidf_model = load('tfidf_model.pkl')
 
 
-tfidf_episodes = tfidf_model.transform(tng_series_scripts_cleaned['text with bigrams'])
+tfidf_episodes = tfidf_model.transform(scripts_cleaned['complete_text_with_bigrams'])
 
-tfidf_episodes_frames = pd.DataFrame(tfidf_episodes.toarray())
-print(len(tfidf_episodes_frames.columns))
+#tfidf_episodes_frames = pd.DataFrame(tfidf_episodes.toarray())
+#print(len(tfidf_episodes_frames.columns))
 
 
 
@@ -50,6 +51,6 @@ plt.xlabel('number of components')
 plt.ylabel('variance explained')
 plt.show()
 
-# as we can see, 160 components/dimensions are necessary to explain 95% of the variance
-# but that is still a massiv reduction from 23337 dimensions before.
+# as we can see, 430 components/dimensions are necessary to explain 95% of the variance
+# but that is still a massiv reduction from 30000+ dimensions before.
     

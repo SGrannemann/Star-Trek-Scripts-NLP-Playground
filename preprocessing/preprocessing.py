@@ -40,13 +40,17 @@ def remove_speakers_and_empty_lines(episode_content: str) -> str:
         # for this application
         if ':' in line:
             part_to_keep = line.split(':')[1]
-            cleaned_lines.append(part_to_keep.strip() + ' \n')
+            cleaned_lines.append(part_to_keep.strip())
             continue
         # after this string there are only information about the franchise, we can leave those out.
         if line == '<Back':
             break
-        cleaned_lines.append(line.strip() + ' \n')
-    return ''.join(cleaned_lines)
+        cleaned_lines.append(line.strip())
+
+    complete_text = ' '.join(cleaned_lines)
+    # remove the standard header of the scripts
+    complete_text_without_header = re.sub(r'^.*(19\d\d|20\d\d)\s{1,}', '', complete_text)
+    return complete_text_without_header
 
 def get_title(episode_content:str) -> str:
     """Function that extracts the title of an episode from the scripts. 
@@ -166,8 +170,8 @@ def combine_to_bigrams(complete_text: str) -> str:
     """function that combines bigrams from the text where appropriate. Returns string with combined bigrams."""
     sentences = sent_tokenize(complete_text)
     bigram_episode = []
-    for sentence in sentences:
-        tokens = [token.lemma_ for token in nlp(sentence) if token.text not in [' ', '\n']]
+    for sentence in nlp.pipe(sentences, disable=['ner', 'parser']):
+        tokens = [token.lemma_ for token in sentence if token.text != ' ']
         bigram_tokens = bigrams[tokens]
         bigram_episode.append(' '.join(bigram_tokens))
     return ' '.join(bigram_episode)
@@ -290,13 +294,15 @@ if __name__ == '__main__':
 
 
     # use the bigram model to combine tokens into bigrams if appropriate
-    # bigrams = Phraser.load(str(PATH_TO_DATA) + '\\bigram_model.pkl')
+    bigrams = Phraser.load(str(PATH_TO_DATA) + '\\bigram_model.pkl')
     
-    # # combine the script and the plot description
-    # tng_series_scripts_cleaned['complete_text'] = tng_series_scripts_cleaned['EpisodeText'] + tng_series_scripts_cleaned['wiki_plot']
+    #  combine the script and the plot description
+    print('Combining texts...')
+    complete_frame['complete_text'] = complete_frame['EpisodeText'] + complete_frame['Wiki_plot']
     # # lemmatize them and remove empty strings as well as newline chars.
     
-    # tng_series_scripts_cleaned['complete_text_with_bigrams'] =  tng_series_scripts_cleaned['complete_text'].apply(combine_to_bigrams)
+    print('Combining bigrams...')
+    complete_frame['complete_text_with_bigrams'] =  complete_frame['complete_text'].apply(combine_to_bigrams)
     
     
 

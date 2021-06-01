@@ -4,7 +4,7 @@ import spacy
 from pathlib import Path
 from gensim.models.phrases import Phrases
 from gensim.models.phrases import Phraser
-from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.tokenize import sent_tokenize
 
 # first read in the text and add it all together.
 path_to_data = Path.cwd() / Path('data')
@@ -19,8 +19,9 @@ nlp = spacy.load('en_core_web_sm')
 # prepare for collocation determination
 sentences = sent_tokenize(text)
 wordtokenized_lemmatized_sentences = []
-for sentence in sentences:
-    wordtokenized_lemmatized_sentences.append([token.lemma_ for token in nlp(sentence)])
+for sent in nlp.pipe(sentences, disable=['ner', 'parser']):
+
+    wordtokenized_lemmatized_sentences.append([token.lemma_ for token in sent if token.text != ' '])
 
 
 bigrams = Phrases(wordtokenized_lemmatized_sentences)

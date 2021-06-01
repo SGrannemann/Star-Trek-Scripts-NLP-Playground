@@ -5,11 +5,12 @@ from joblib import load
 from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
 import spacy
+from pathlib import Path
 
+PATH_TO_DATA = Path.cwd() / Path('data')
+bigrams = Phraser.load(str(PATH_TO_DATA) + '\\bigram_model.pkl')
 
-bigrams = Phraser.load('bigram_model.pkl')
-
-scripts_cleaned = pd.read_pickle('scripts_and_plots.pkl')
+scripts_cleaned = pd.read_pickle(PATH_TO_DATA / Path('scripts_and_plots.pkl'))
 nlp = spacy.load('en_core_web_sm')
 
 # get tfidf representation

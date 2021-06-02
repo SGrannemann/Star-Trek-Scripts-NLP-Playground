@@ -1,9 +1,9 @@
-"""Creates a serialized version of the TFIDF model for the TNG episodes."""
+"""Creates a serialized version of the TFIDF and LSA models for the episodes."""
+from pathlib import Path
 import pandas as pd
 from joblib import dump
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
-from pathlib import Path
 
 PATH_TO_DATA = Path.cwd() / Path('data')
 
@@ -22,7 +22,8 @@ print(tfidf_episodes_frames.head(10))
 
 
 # convert the vector space to LSA space with reduced dimensions
-# we use 160 components as that retains 95% of the variance in the dataset.
+# we use 430 components as that retains 95% of the variance in the dataset.
+# to try out different dimensions, use the optimal_lsa.py file in the analysis folder.
 
 svd = TruncatedSVD(n_components=430, random_state=42)
 svd_model = svd.fit(tfidf_episodes)
@@ -32,4 +33,3 @@ lsa_episodes = svd_model.transform(tfidf_episodes)
 
 lsa_episodes_frames = pd.DataFrame(lsa_episodes)
 print(lsa_episodes_frames.head(10))
-

@@ -1,7 +1,7 @@
 """ Script to create ngrams based on their collocations."""
+from pathlib import Path
 import pandas as pd
 import spacy
-from pathlib import Path
 from gensim.models.phrases import Phrases
 from gensim.models.phrases import Phraser
 from nltk.tokenize import sent_tokenize

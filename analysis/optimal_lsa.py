@@ -1,3 +1,4 @@
+"""Module for finding the optimal amount dimensions for the LSA transformation of the corpus."""
 from gensim.models.phrases import Phraser
 from joblib import load
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -24,11 +25,6 @@ tfidf_model = load('tfidf_model.pkl')
 
 tfidf_episodes = tfidf_model.transform(scripts_cleaned['complete_text_with_bigrams'])
 
-#tfidf_episodes_frames = pd.DataFrame(tfidf_episodes.toarray())
-#print(len(tfidf_episodes_frames.columns))
-
-
-
 # convert the vector space to LSA space with reduced dimensions
 
 
@@ -53,4 +49,4 @@ plt.show()
 
 # as we can see, 430 components/dimensions are necessary to explain 95% of the variance
 # but that is still a massiv reduction from 30000+ dimensions before.
-    
+

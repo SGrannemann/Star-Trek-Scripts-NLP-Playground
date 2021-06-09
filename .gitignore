@@ -130,9 +130,9 @@ dmypy.json
 
 
 # Project specific ignores
-*.txt
 *.pkl
 data/*.pkl
 data/bigram_model.pkl
 data/cleaned_tng_scripts.pkl
 .vscode
+data/scraped/

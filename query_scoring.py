@@ -1,4 +1,4 @@
-"""Module to try out tfidf based scoring of a query input by the user."""
+"""Module to try out tfidf and LSA based scoring of a query input by the user."""
 from pathlib import Path
 from gensim.models.phrases import Phraser
 from joblib import load
@@ -8,7 +8,7 @@ import spacy
 
 
 PATH_TO_DATA = Path.cwd() / Path('data')
-bigrams = Phraser.load(str(PATH_TO_DATA) + '\\bigram_model.pkl')
+bigrams = Phraser.load(str(PATH_TO_DATA) + '/bigram_model.pkl')
 
 scripts_cleaned = pd.read_pickle(PATH_TO_DATA / Path('scripts_and_plots.pkl'))
 nlp = spacy.load('en_core_web_sm')
@@ -24,6 +24,7 @@ svd_model = load('svd_model.pkl')
 lsa_episodes = svd_model.transform(tfidf_episodes)
 
 query = input('What are you looking for?')
+
 bigram_query = [' '.join(bigrams[[token.lemma_ for token in nlp(query)]])]
 
 # transform the query to the different vector spaces

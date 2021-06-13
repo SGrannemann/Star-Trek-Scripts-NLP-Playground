@@ -1,10 +1,12 @@
 """Module to try out tfidf and LSA based scoring of a query input by the user."""
 from pathlib import Path
 from typing import List
+from gensim.models import doc2vec
 from gensim.models.phrases import Phraser
 from joblib import load
 from sklearn.metrics.pairwise import cosine_similarity
-from gensim.models import Word2Vec
+from gensim.models import KeyedVectors
+from gensim.models.doc2vec import Doc2Vec
 from nltk.tokenize import sent_tokenize
 import pandas as pd
 import spacy
@@ -13,17 +15,19 @@ import numpy as np
 
 
 
-def check_query_vocab(query: List, word2vec_model) -> List:
+
+def check_query_vocab(query: List, wordvectors) -> List:
     tokens = query[0].split()
     tokens_to_return = []
     # check for different spelling options of the query and only use the word
     # if any of the spellings are actually in the vocabular
     for token in tokens:
-        if token in word2vec_model.wv:
+        
+        if token in wordvectors:
             tokens_to_return.append(token)
-        elif token.lower() in word2vec_model.wv:
+        elif token.lower() in wordvectors:
             tokens_to_return.append(token.lower())
-        elif token.title() in word2vec_model.wv:
+        elif token.title() in wordvectors:
             tokens_to_return.append(token.title())
     return tokens_to_return  
 
@@ -46,16 +50,17 @@ tfidf_episodes_frames = pd.DataFrame(tfidf_episodes.toarray())
 svd_model = load('svd_model.pkl')
 lsa_episodes = svd_model.transform(tfidf_episodes)
 
-word2vec_model = Word2Vec.load('word2vec.model')
 
-index2word_set = set(word2vec_model.wv.index2word)
-
+wordvectors = KeyedVectors.load('wordvectors.kv', mmap='r')
 
 
+# doc2vec model
+doc2vec_model = Doc2Vec.load('doc2vecmodel.model')
 
 
 
-query = input('What are you looking for?')
+
+query = input('What are you looking for? \n')
 
 bigram_query = [' '.join(bigrams[[token.lemma_ for token in nlp(query)]])]
 
@@ -70,14 +75,24 @@ cosineSimilarities_lsa = cosine_similarity(lsa_query, lsa_episodes).flatten()
 # calculate cosine similarity using word2vec for all episodes:
 word2vec_results = []
 for episode in scripts_cleaned['complete_text_with_bigrams']:
-    query = check_query_vocab(bigram_query, word2vec_model)
-    result = word2vec_model.wv.n_similarity(query, ' '.join(sent_tokenize(episode)).split())
     
+    query = check_query_vocab(bigram_query, wordvectors)
+    result = wordvectors.n_similarity(query, ' '.join(sent_tokenize(episode)).split())
     word2vec_results.append(result)
 
+# calculate cosine similarity using doc2vec
 
-
-
+doc2vec_episode_vectors = []
+doc2vec_n_similar_results = []
+query_vector = doc2vec_model.infer_vector(bigram_query[0].split(), steps=10)
+for episode in scripts_cleaned['complete_text_with_bigrams']:
+    # infer vectors for later calculation of cosine similarity
+    episode_vector = doc2vec_model.infer_vector(' '.join(sent_tokenize(episode)).split(), steps=10) 
+    doc2vec_episode_vectors.append(episode_vector)
+    # get the result for each episode directly from n_similarity
+    #result = doc2vec_model.wv.n_similarity(check_query_vocab(bigram_query, doc2vec_model.wv), ' '.join(sent_tokenize(episode)).split())
+    #doc2vec_n_similar_results.append(result)
+doc2vec_results = cosine_similarity(query_vector, doc2vec_episode_vectors)
 
 
 # get list of all titles (starting from episode 0 ascending)
@@ -87,7 +102,8 @@ list_of_titles = list(scripts_cleaned['Title'].values)
 search_results_tfidf = list(zip(list_of_titles, cosineSimilarities_tfidf))
 search_results_lsa = list(zip(list_of_titles, cosineSimilarities_lsa))
 search_results_word2vec = list(zip(list_of_titles, word2vec_results))
-
+search_results_doc2vec = list(zip(list_of_titles, doc2vec_results))
+search_results_doc2vec_n_similar = list(zip(list_of_titles, doc2vec_n_similar_results))
 
 # sort the tuples of (title, score) by score
 search_results_tfidf.sort(key= lambda x: x[1], reverse=True)
@@ -100,7 +116,8 @@ search_results_lsa.sort(key= lambda x: x[1], reverse=True)
 
 search_results_word2vec.sort(key= lambda x: x[1], reverse=True)
 
-
+search_results_doc2vec.sort(key= lambda x: x[1], reverse=True)
+search_results_doc2vec_n_similar.sort(key= lambda x: x[1], reverse=True)
 
 # only use the following line if you are interested in all scores
 #print('The search results using LSA cosine similarity scoring were:', search_results_lsa)
@@ -108,5 +125,7 @@ search_results_word2vec.sort(key= lambda x: x[1], reverse=True)
 
 
 # results next to eacher other
-result_frame = pd.DataFrame({'TFIDF': [title for title, _ in search_results_tfidf], 'LSA': [title for title, _ in search_results_lsa], 'word2vec': [title for title, _ in search_results_word2vec]})
+result_frame = pd.DataFrame({'TFIDF': [title for title, _ in search_results_tfidf], 'LSA': [title for title, _ in search_results_lsa], 
+                            'word2vec': [title for title, _ in search_results_word2vec], 'doc2vec cosine': [title for title, _ in search_results_doc2vec]}),
+                            #'doc2vec n similar': [title for title, _ in search_results_doc2vec_n_similar]})
 print(result_frame.head(10))

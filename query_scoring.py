@@ -82,17 +82,12 @@ for episode in scripts_cleaned['complete_text_with_bigrams']:
 
 # calculate cosine similarity using doc2vec
 
+
 doc2vec_episode_vectors = []
-doc2vec_n_similar_results = []
+
 query_vector = doc2vec_model.infer_vector(bigram_query[0].split(), steps=10)
-for episode in scripts_cleaned['complete_text_with_bigrams']:
-    # infer vectors for later calculation of cosine similarity
-    episode_vector = doc2vec_model.infer_vector(' '.join(sent_tokenize(episode)).split(), steps=10) 
-    doc2vec_episode_vectors.append(episode_vector)
-    # get the result for each episode directly from n_similarity
-    #result = doc2vec_model.wv.n_similarity(check_query_vocab(bigram_query, doc2vec_model.wv), ' '.join(sent_tokenize(episode)).split())
-    #doc2vec_n_similar_results.append(result)
-doc2vec_results = cosine_similarity(query_vector, doc2vec_episode_vectors)
+doc2vec_most_similar = doc2vec_model.docvecs.most_similar([query_vector])
+search_results_doc2vec = [scripts_cleaned.iloc[index].Title for index, similarity in doc2vec_most_similar]
 
 
 # get list of all titles (starting from episode 0 ascending)
@@ -102,8 +97,8 @@ list_of_titles = list(scripts_cleaned['Title'].values)
 search_results_tfidf = list(zip(list_of_titles, cosineSimilarities_tfidf))
 search_results_lsa = list(zip(list_of_titles, cosineSimilarities_lsa))
 search_results_word2vec = list(zip(list_of_titles, word2vec_results))
-search_results_doc2vec = list(zip(list_of_titles, doc2vec_results))
-search_results_doc2vec_n_similar = list(zip(list_of_titles, doc2vec_n_similar_results))
+#search_results_doc2vec = list(zip(list_of_titles, doc2vec_results))
+
 
 # sort the tuples of (title, score) by score
 search_results_tfidf.sort(key= lambda x: x[1], reverse=True)
@@ -116,8 +111,8 @@ search_results_lsa.sort(key= lambda x: x[1], reverse=True)
 
 search_results_word2vec.sort(key= lambda x: x[1], reverse=True)
 
-search_results_doc2vec.sort(key= lambda x: x[1], reverse=True)
-search_results_doc2vec_n_similar.sort(key= lambda x: x[1], reverse=True)
+#search_results_doc2vec.sort(key= lambda x: x[1], reverse=True)
+
 
 # only use the following line if you are interested in all scores
 #print('The search results using LSA cosine similarity scoring were:', search_results_lsa)
@@ -125,7 +120,7 @@ search_results_doc2vec_n_similar.sort(key= lambda x: x[1], reverse=True)
 
 
 # results next to eacher other
-result_frame = pd.DataFrame({'TFIDF': [title for title, _ in search_results_tfidf], 'LSA': [title for title, _ in search_results_lsa], 
-                            'word2vec': [title for title, _ in search_results_word2vec], 'doc2vec cosine': [title for title, _ in search_results_doc2vec]}),
-                            #'doc2vec n similar': [title for title, _ in search_results_doc2vec_n_similar]})
+result_frame = pd.DataFrame({'TFIDF': [title for title, _ in search_results_tfidf[:10]], 'LSA': [title for title, _ in search_results_lsa[:10]], 
+                            'word2vec': [title for title, _ in search_results_word2vec[:10]],# 'doc2vec cosine': [title for title, _ in search_results_doc2vec]}),
+                            'doc2vec n similar': [title for title in search_results_doc2vec]})
 print(result_frame.head(10))

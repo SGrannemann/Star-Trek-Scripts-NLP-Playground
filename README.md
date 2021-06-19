@@ -1,8 +1,7 @@
 # Star-Trek-Scripts-NLP-Playground
 ## Project as a training ground for different aspects of NLP
 This project is intended as a toy project to practice different aspects of NLP, from collecting and preprocessing data to the different vector space transformations and different options for scoring document similarity.
-You can use the provided Python scripts to create your own corpus of Star Trek scripts and Wikipedia plot summaries and afterwards query the corpus. For now, I have focussed more on collecting and cleaning the data
-instead of using advanced NLP methods. Available query options are thus TFIDF, LSA and word2vec for now.
+You can use the provided Python scripts to create your own corpus of Star Trek scripts and Wikipedia plot summaries and afterwards query the corpus. For now, I have focussed more on collecting and cleaning the data instead of using advanced NLP methods. Available query options are thus TFIDF, LSA, word2vec and doc2vec for now. All query options are very basic and no sophisticated algorithms.
 
 ## Getting Started
 In case you want to use the code available here, you can most easily proceed as follows:
@@ -13,8 +12,8 @@ In case you want to use the code available here, you can most easily proceed as 
 - now you can use the preprocessing.py script (in the preprocessing folder) that will create a pandas DataFrame with both the scripts and the plot descriptions. You will need to comment out the lines with the bigrams towards the end.
 - Train the bigram model via collocation_creation.py.
 - use preprocessing again so the DataFrame contains the bigram version of the text too. (Uncomment the respective lines again.)
-- Run word2vec_training.py to create the word2vec vector embedding model of the corpus.
-- You can now use the query_scoring.py script to query the corpus based on TFIDF, LSA and word2vec. Have fun - and do not hesitate to give feedback :)
+- Run word2vec_doc2vec_creation.py to create the word2vec vector embedding model of the corpus and the doc2vec embeddding model.
+- You can now use the query_scoring.py script to query the corpus based on TFIDF, LSA, word2vec and doc2vec. Have fun - and do not hesitate to give feedback :)
 
 
 ## Project structure
@@ -34,7 +33,7 @@ Scripts for collecting additional data can be found here as well, such as scrapi
 
 ### Preprocessing
 In this folder, you can find scripts that preprocess the data, either for extracting the text from the original files or for cleaning up text data etc. 
-Additionally, modules that create collocations or TFIDF models reside in this folder.
+Additionally, modules that create collocations or TFIDF/LSA models or word2vec/doc2vec embeddings reside in this folder.
 
 ## Contact and contribution
 Should you want to contribute or to contact me, feel free to send me an email.

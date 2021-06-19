@@ -138,3 +138,4 @@ data/cleaned_tng_scripts.pkl
 data/scraped/
 *.model
 *.npy
+word2vec_results.txt

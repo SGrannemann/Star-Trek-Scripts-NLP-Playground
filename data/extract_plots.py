@@ -29,22 +29,25 @@ for wikipage in FOLDER_TO_WIKIDATA.glob('*.txt'):
 
         soup = bs4.BeautifulSoup(episode_document, 'html.parser')
         plot = []
-        # lets find the header for plot
-        plot_start = soup.find(id='Plot')
-        # Wikipedia is not always consistent in naming the sections
-        if plot_start is None:
-            plot_start = soup.find(id='Plot_summary')
-        # iterate over all paragraph elements until we hit the next heading
-        # this is the plot description
-        for para_element in plot_start.parent.nextSiblingGenerator():
-            if para_element.name == 'h2':
-                break
-            if para_element == '\n':
-                continue
-            if para_element.text:
-                plot.append(para_element.text)
+        # lets find the header for plot, but we only want to get the Act wise descriptions, not the teaser
+        act_headings = soup.find_all(id=re.compile('^Act'))
+        
+
+        for act in act_headings: # iterate over all acts
+            for para_element in act.parent.nextSiblingGenerator(): # this line allows us to iterate over all elements that come next/under
+                # to an act heading
+                if para_element.name in ['h3', 'h2']: # this is either the next act or we are done with the plot description
+                    break
+                if para_element.name == 'figure': # we dont want the captions
+                    continue
+                if para_element == '\n':
+                    continue
+                if para_element.text:
+                    plot.append(para_element.text)
 
         # process a bit and save to new file.
+        if not FOLDER_FOR_SAVING.exists():
+            FOLDER_FOR_SAVING.mkdir(parents=True)
         with open(FOLDER_FOR_SAVING / Path(title), 'w', encoding='utf-8') as file_to_write:
             # lets remove the parts that are in brackets - these are usually the names of the actors
             complete_text = ' '.join(plot)

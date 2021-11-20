@@ -9,16 +9,16 @@ import bs4
 # set the series folder here
 
 # tng folders
-#FOLDER_TO_WIKIDATA = Path.cwd() / Path('data') / Path('scraped') / Path('tng')
-#FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('tng') / Path('processed')
+FOLDER_TO_WIKIDATA = Path.cwd() / Path('data') / Path('scraped') / Path('tng')
+FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('tng') / Path('processed')
 
 # voy folders
 #FOLDER_TO_WIKIDATA = Path.cwd() / Path('data') / Path('scraped') / Path('voy')
 #FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('voy') / Path('processed')
 
 # ds9 folders
-FOLDER_TO_WIKIDATA = Path.cwd() / Path('data') / Path('scraped') / Path('ds9')
-FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('ds9') / Path('processed')
+#FOLDER_TO_WIKIDATA = Path.cwd() / Path('data') / Path('scraped') / Path('ds9')
+#FOLDER_FOR_SAVING = Path.cwd() / Path('data') / Path('scraped') / Path('ds9') / Path('processed')
 
 
 # loop over all text files, find the plot element and get all para elements
@@ -40,7 +40,7 @@ for wikipage in FOLDER_TO_WIKIDATA.glob('*.txt'):
                     break
                 if para_element.name == 'figure': # we dont want the captions
                     continue
-                if para_element == '\n':
+                if para_element == '\n' or ' ':
                     continue
                 if para_element.text:
                     plot.append(para_element.text)

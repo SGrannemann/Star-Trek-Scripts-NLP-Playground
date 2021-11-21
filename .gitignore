@@ -142,3 +142,4 @@ word2vec_results.txt
 *.txt
 *.json
 *.kv
+mlruns/

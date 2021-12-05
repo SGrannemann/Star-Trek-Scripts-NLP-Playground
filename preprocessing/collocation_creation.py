@@ -10,8 +10,6 @@ from nltk.tokenize import sent_tokenize
 scripts_and_plots = pd.read_pickle(str(Path.cwd() / Path('data')) + '/scripts_and_plots.pkl')
 
 
-
-
 # first read in the text from Memory Alpha and add it all together.
 path_to_data = Path.cwd() / Path('data') / Path('scraped')
 episode_folders = ['ds9', 'tng', 'voy']
@@ -25,9 +23,7 @@ for series in episode_folders:
 # read in the scripts
 for index, episode_text in scripts_and_plots.EpisodeText.items():
     text += episode_text
-# now add wikipedia descriptions
-for index, plot_description in scripts_and_plots['Wiki_plot'].items():
-    text += plot_description
+
 
 nlp = spacy.load('en_core_web_sm')
 # prepare for collocation determination by tokenising and lemmatization
@@ -40,8 +36,6 @@ for sent in nlp.pipe(sentences, disable=['ner', 'parser']):
 # train the actual bigram model
 
 bigrams = Phrases(wordtokenized_lemmatized_sentences)
-
-
 
 
 # lets save that model to use in later steps

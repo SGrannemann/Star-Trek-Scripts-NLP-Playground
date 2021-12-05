@@ -4,11 +4,8 @@ both the cleaned text as well as the cleand text with bigrams."""
 from pathlib import Path
 import re
 import pandas as pd
-from gensim.models.phrases import Phraser
-from nltk.tokenize import sent_tokenize
 from pandas.core.frame import DataFrame
 import spacy
-
 
 
 def remove_speakers_and_empty_lines(episode_content: str) -> str:
@@ -46,7 +43,8 @@ def remove_speakers_and_empty_lines(episode_content: str) -> str:
     complete_text_without_header = re.sub(r'^.*(19\d\d|20\d\d)\s{1,}', '', complete_text)
     return complete_text_without_header
 
-def get_title(episode_content:str) -> str:
+
+def get_title(episode_content: str) -> str:
     """Function that extracts the title of an episode from the scripts.
     This allows finding the correct plot description from Wikipedia later on.
     Contains a lot of hardcoded cases because spelling etc. was very heterogenous."""
@@ -129,7 +127,7 @@ def get_title(episode_content:str) -> str:
         title = '...nor the battle to the strong'
     if title == 'trials and':
         title = 'trials and tribble-ations'
-    if title ==  'let he who is without':
+    if title == 'let he who is without':
         title += ' sin...'
     if title == 'the darkness and the':
         title += ' light'
@@ -162,73 +160,7 @@ def get_title(episode_content:str) -> str:
     return title
 
 
-def combine_to_bigrams(complete_text: str) -> str:
-    """function that combines bigrams from the text where appropriate.
-    Returns string with combined bigrams."""
-    sentences = sent_tokenize(complete_text)
-    bigram_episode = []
-    for sentence in nlp.pipe(sentences, disable=['ner', 'parser']):
-        tokens = [token.lemma_ for token in sentence if token.text != ' ']
-        bigram_tokens = bigrams[tokens]
-        bigram_episode.append(' '.join(bigram_tokens))
-    return ' '.join(bigram_episode)
-
-
-def get_wiki_plots(show_scripts: DataFrame, show:str) -> DataFrame:
-    """Adds the Wiki plot descriptions to the dataframe and returns it with plot descriptions."""
-    # set the index of the dataframe to title for easy combination with the Wiki articles later on
-    show_scripts.set_index('Title', inplace=True)
-
-    # construct path to saved data
-    folder_for_saving = Path.cwd() / Path('data') / Path('scraped') / Path(show) / Path('processed')
-
-    # variables to keep track of the wiki articles we read in
-    plots = []
-    titles = []
-    # grab the plot descriptions from the files
-    for plot_description_file in folder_for_saving.glob('*.txt'):
-        title = plot_description_file.stem
-        with open(plot_description_file, 'r', encoding='utf-8') as episode_file:
-            plot = episode_file.read()
-            # map the scripts from DS9 for two-part episodes to the correct wiki entry.
-            # Somehow in the Wiki entry these were done differently
-            # than for the other shows. e.g. : For TNG the wiki entry always states
-            # "Title, Part I" / "Title, Part, II". For DS9 it is "Title," "Part I" :(
-            if title.lower() == 'the maquis':
-                titles.append('the maquis, part i')
-                titles.append('the maquis, part ii')
-                plots.append(plot)
-                plots.append(plot)
-            elif title.lower() == 'the search':
-                titles.append('the search, part i')
-                titles.append('the search, part ii')
-                plots.append(plot)
-                plots.append(plot)
-            elif title.lower() == 'past tense':
-                titles.append('past tense, part i')
-                titles.append('past tense, part ii')
-                plots.append(plot)
-                plots.append(plot)
-            else:
-                titles.append(title.lower())
-                plots.append(plot)
-
-    # add the plot descriptions to the dataframe
-    wiki_plots = pd.Series(plots, index=titles, dtype='string')
-    show_scripts = show_scripts.assign(Wiki_plot=wiki_plots)
-
-    # check for bad values
-    if show_scripts.Wiki_plot.isnull().sum() != 0:
-        print('NaN entries found. Check your data!')
-        print('Wiki plots without match for {}:'.format(show))
-        print(show_scripts[show_scripts.Wiki_plot.isnull()])
-
-    # reset the index
-    show_scripts.reset_index(inplace=True)
-
-    return show_scripts
-
-def create_dataframe_for_show(all_scripts: DataFrame, show:str) -> DataFrame:
+def create_dataframe_for_show(all_scripts: DataFrame, show: str) -> DataFrame:
     """Creates a DataFrame for the different shows, including removing speakers and
     empty lines, correcting the episode numbering and
     adding the plot descriptions from Wikipedia."""
@@ -254,13 +186,13 @@ def create_dataframe_for_show(all_scripts: DataFrame, show:str) -> DataFrame:
     show_scripts_cleaned = show_scripts.map(remove_speakers_and_empty_lines)
     show_titles = show_scripts.map(get_title)
 
-
     # combine the pd.Series to a dataframe.
-    show_scripts_cleaned = pd.DataFrame({'EpisodeText' : show_scripts_cleaned, 'Title' : show_titles}, index=show_scripts_cleaned.index)
+    show_scripts_cleaned = pd.DataFrame({'EpisodeText': show_scripts_cleaned,
+                                        'Title': show_titles}, index=show_scripts_cleaned.index)
     show_scripts_cleaned['Show'] = show.upper()
     # now get the wiki plot summaries
-    show_scripts_cleaned_wiki = get_wiki_plots(show_scripts_cleaned, show)
-    return show_scripts_cleaned_wiki
+    return show_scripts_cleaned
+
 
 if __name__ == '__main__':
     # paths for data
@@ -271,7 +203,6 @@ if __name__ == '__main__':
 
     # read in scripts from the json file
     all_series_scripts = pd.read_json(PATH_TO_DATA / Path('all_scripts_raw.json'))
-
 
     # the following two booleans are used to know if the first part
     # of the double episodes has already been processed
@@ -285,21 +216,8 @@ if __name__ == '__main__':
     # we build one DataFrame where each episode is a row
     # (so the first 176 rows should be TNG, followed by DS9 ,...)
     for show in ['tng', 'ds9', 'voy']:
-        complete_frame = pd.concat([complete_frame, create_dataframe_for_show(all_series_scripts, show)], ignore_index=True)
+        complete_frame = pd.concat([complete_frame, create_dataframe_for_show(
+            all_series_scripts, show)], ignore_index=True)
     print(complete_frame.head())
 
-    # use the bigram model to combine tokens into bigrams if appropriate
-    bigrams = Phraser.load(str(PATH_TO_DATA) + '\\bigram_model.pkl')
-
-    #  combine the script and the plot description
-    print('Combining texts...')
-    complete_frame['complete_text'] = complete_frame['EpisodeText'] + complete_frame['Wiki_plot']
-    # # lemmatize them and remove empty strings as well as newline chars.
-
-    print('Combining bigrams...')
-    complete_frame['complete_text_with_bigrams'] =  complete_frame['complete_text'].apply(combine_to_bigrams)
-
-
-
-
-    complete_frame.to_pickle(str(PATH_TO_DATA) + '\scripts_and_plots.pkl')
+    complete_frame.to_pickle(str(PATH_TO_DATA) / Path('scripts_and_plots.pkl'))

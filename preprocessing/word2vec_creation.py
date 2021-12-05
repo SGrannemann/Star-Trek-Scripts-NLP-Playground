@@ -1,11 +1,12 @@
 """Script to create the word2vec and doc2vec models with the optimal hyperparameters."""
-from gensim.models import Word2Vec
-from pathlib import Path
 import multiprocessing
+from pathlib import Path
+from gensim.models import Word2Vec
 
 
 # train the word2vec model
-word2vec_model = Word2Vec(corpus_file=str(Path.cwd() / Path('star_trek_corpus.txt')),workers=multiprocessing.cpu_count(), sg=1, min_count=1)#, , iter=20, size=150, sg=1, hs=0, negative=10, sample=0)
+word2vec_model = Word2Vec(corpus_file=str(Path.cwd() / Path('star_trek_corpus.txt')),
+                          workers=multiprocessing.cpu_count(), sg=1, min_count=1)
 
 word2vec_model.save('word2vec.model')
 

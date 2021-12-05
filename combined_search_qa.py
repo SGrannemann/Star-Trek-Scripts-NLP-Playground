@@ -1,6 +1,8 @@
-'''Script that sets up document stores from the files created in this project. Lets you search for relevant episodes from TNG, VOY, and DS9 with either
-a TfIdf based search or a dense vector space search using dense passage retrieval. For details please see the Haystack documentation.
-Last part is a simple question answering system. 
+'''Script that sets up document stores from the files created in this project.
+Lets you search for relevant episodes from TNG, VOY, and DS9 with either a TfIdf
+based search or a dense vector space search using dense passage retrieval.
+For details please see the Haystack documentation.
+Last part is a simple question answering system.
 '''
 
 from pathlib import Path
@@ -57,16 +59,17 @@ for query in queries:
 
 
 # set up FARMReader for question answering
-model = 'deepset/roberta-base-squad2'
-reader = FARMReader(model)
+MODEL = 'deepset/roberta-base-squad2'
+reader = FARMReader(MODEL)
 
 # use pipeline with both the DPR retriever and the TfIdf retriever.
 # TfIdf returns better search results for the queries I tested (and consequently is better at answering questions)
 pipeline_dpr = ExtractiveQAPipeline(reader, DPR_retriever)
 pipeline_tfidf = ExtractiveQAPipeline(reader, TfIdf_retriever)
-questions = ['Who captures Geordi La Forge?', 'Which tea does Picard drink?', "Who is Data's brother?", 'What is the name of Benjamin Siskos son?',
-             'Who is the captain of the USS Voyager?', "What is Worf's race?",
-             'Who is the chief engineer on the USS Enterprise?', 'What is gold pressed latinum?', 'What type of torpedos does the Enterprise have?']
+questions = ['Who captures Geordi La Forge?', 'Which tea does Picard drink?', "Who is Data's brother?",
+             'What is the name of Benjamin Siskos son?', 'Who is the captain of the USS Voyager?',
+             "What is Worf's race?", 'Who is the chief engineer on the USS Enterprise?',
+             'What is gold pressed latinum?', 'What type of torpedos does the Enterprise have?']
 
 # simply print the 3 best answers for each question
 for question in questions:

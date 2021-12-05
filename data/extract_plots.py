@@ -1,5 +1,5 @@
 """Module for extracting the plot descriptions from the
-scraped Wikipedia articles and writes them to a simple text file."""
+scraped Memory Alpha articles and writing them to a simple text file."""
 from pathlib import Path
 import re
 import bs4
@@ -33,9 +33,10 @@ for wikipage in FOLDER_TO_WIKIDATA.glob('*.txt'):
         act_headings = soup.find_all(id=re.compile('^Act'))
 
         for act in act_headings:  # iterate over all acts
-            for para_element in act.parent.nextSiblingGenerator():  # this line allows us to iterate over all elements that come next/under
-                # to an act heading
-                if para_element.name in ['h3', 'h2']:  # this is either the next act or we are done with the plot description
+            # this line allows us to iterate over all elements that come next/under:
+            for para_element in act.parent.nextSiblingGenerator():
+                # ignore h3, h2 because this is either the next act or we are done with the plot description
+                if para_element.name in ['h3', 'h2']:
                     break
                 if para_element.name == 'figure':  # we dont want the captions
                     continue
@@ -50,7 +51,7 @@ for wikipage in FOLDER_TO_WIKIDATA.glob('*.txt'):
             FOLDER_FOR_SAVING.mkdir(parents=True)
         with open(FOLDER_FOR_SAVING / Path(title), 'w', encoding='utf-8') as file_to_write:
             # lets remove the parts that are in brackets - these are usually the names of the actors
-            complete_text = ' '.join(plot)
+            COMPLETE_TEXT = ' '.join(plot)
             # Regex: Take everything between ( and ) with non greedy matching
-            text_without_actors = re.sub(r'\(.{1,}?\)', '', complete_text)
+            text_without_actors = re.sub(r'\(.{1,}?\)', '', COMPLETE_TEXT)
             file_to_write.write(text_without_actors)

@@ -1,6 +1,7 @@
-""" Script to create ngrams based on their collocations and a file for the complete corpus in a format suitable to train gensim word2vec on it."""
-import pandas as pd
+""" Script to create ngrams based on their collocations and a
+file for the complete corpus in a format suitable to train gensim word2vec on it."""
 from pathlib import Path
+import pandas as pd
 import spacy
 from gensim.models.phrases import Phrases
 from gensim.models.phrases import Phraser
@@ -13,7 +14,7 @@ scripts_and_plots = pd.read_pickle(str(Path.cwd() / Path('data')) + '/scripts_an
 # first read in the text from Memory Alpha and add it all together.
 path_to_data = Path.cwd() / Path('data') / Path('scraped')
 episode_folders = ['ds9', 'tng', 'voy']
-text = ''
+text = ''  # pylint: disable=invalid-name
 for series in episode_folders:
     final_path = path_to_data / Path(series) / Path('processed')
     for episode_file in final_path.glob('*.txt'):

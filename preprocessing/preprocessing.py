@@ -1,6 +1,8 @@
-"""Cleans the scripts of the episodes, adds plot summaries from Wikipedia and combines tokens into bigrams. Adds the Wikipedia plot data
-(see data folder) to the dataframe. Creates a serialized version of a dataframe that contains
+"""Cleans the scripts of the episodes, adds plot summaries from Wikipedia and combines tokens into bigrams.
+Adds the Wikipedia plot data (see data folder) to the dataframe.
+Creates a serialized version of a dataframe that contains
 both the cleaned text as well as the cleand text with bigrams."""
+import sys
 from pathlib import Path
 import re
 import pandas as pd
@@ -49,8 +51,11 @@ def get_title(episode_content: str) -> str:
     This allows finding the correct plot description from Wikipedia later on.
     Contains a lot of hardcoded cases because spelling etc. was very heterogenous."""
     # we need those boolean flags to know whether we already processed that episodes once
-    global bestOfBoth
-    global chainOfCommand
+    # even though the use of the global is statement is suboptimal, this is a very easy
+    # case --> I decided to use it here.
+    global bestOfBoth  # pylint: disable=global-statement, invalid-name
+
+    global chainOfCommand  # pylint: disable=global-statement, invalid-name
 
     title = ''
     for line in episode_content.split('\n'):
@@ -71,10 +76,10 @@ def get_title(episode_content: str) -> str:
         title = title.replace('honour', 'honor')
     if 'favour' in title:
         title = title.replace('favour', 'favor')
-    if title == '' and show == 'tng':
+    if title == '' and series == 'tng':
         # somehow the script for the episode Peak Performance does not contain a title
         title = 'peak performance'
-    if title == '' and show == 'voy':
+    if title == '' and series == 'voy':
         # somehow the script for the episode Scientific Method does not contain a title
         title = 'scientific method'
 
@@ -97,12 +102,12 @@ def get_title(episode_content: str) -> str:
         title = 'time\'s arrow, part ii'
     if title == 'true':
         title = 'true q'
-    if title == 'the best of both' and bestOfBoth:
+    if title == 'the best of both' and bestOfBoth:  # pylint: disable=used-before-assignment
         title = 'the best of both worlds, part ii'
     if title == 'the best of both' and not bestOfBoth:
         title = 'the best of both worlds, part i'
         bestOfBoth = True
-    if title == 'chain of command, part' and chainOfCommand:
+    if title == 'chain of command, part' and chainOfCommand:  # pylint: disable=used-before-assignment
         title = 'chain of command, part ii'
     if title == 'chain of command, part' and not chainOfCommand:
         title = 'chain of command, part i'
@@ -180,7 +185,7 @@ def create_dataframe_for_show(all_scripts: DataFrame, show: str) -> DataFrame:
         show_scripts = show_scripts.dropna()
     else:
         print('Unknown show...')
-        exit()
+        sys.exit()
 
     # get the title and text of the script
     show_scripts_cleaned = show_scripts.map(remove_speakers_and_empty_lines)
@@ -207,17 +212,17 @@ if __name__ == '__main__':
     # the following two booleans are used to know if the first part
     # of the double episodes has already been processed
     # those are two part episodes that were hard to handle.
-    bestOfBoth = False
-    chainOfCommand = False
+    bestOfBoth = False  # pylint: disable=invalid-name
+    chainOfCommand = False  # pylint: disable=invalid-name
 
     # create empty dataframe
     complete_frame = pd.DataFrame(columns=['EpisodeText', 'Title', 'Wiki_plot', 'Show'])
     # combine the empty frame with the frames from the different shows.
     # we build one DataFrame where each episode is a row
     # (so the first 176 rows should be TNG, followed by DS9 ,...)
-    for show in ['tng', 'ds9', 'voy']:
+    for series in ['tng', 'ds9', 'voy']:
         complete_frame = pd.concat([complete_frame, create_dataframe_for_show(
-            all_series_scripts, show)], ignore_index=True)
+            all_series_scripts, series)], ignore_index=True)
     print(complete_frame.head())
 
     complete_frame.to_pickle(str(PATH_TO_DATA) / Path('scripts_and_plots.pkl'))

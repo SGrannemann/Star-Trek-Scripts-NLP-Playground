@@ -4,7 +4,7 @@ import re
 import requests
 import bs4
 
-
+BASE_URL = 'https://memory-alpha.fandom.com/'
 
 # edit here to scrape other shows
 
@@ -34,7 +34,7 @@ soup = bs4.BeautifulSoup(response_object.text, 'html.parser')
 # .summary selects all class = summary elements,
 # .summary a selects all a elements under .summary class elements
 extracted_links = soup.select('.grey tr td:nth-of-type(1) > a')
-links_to_episodes = ['https://memory-alpha.fandom.com/' + extracted_link.get('href') for extracted_link in extracted_links]
+links_to_episodes = [BASE_URL + extracted_link.get('href') for extracted_link in extracted_links]
 
 episode_titles = [extracted_link.text for extracted_link in extracted_links]
 # remove the series title patterns. these are only necessary for disambiguation on the Wiki itself
@@ -50,5 +50,5 @@ if not path_to_save_files.exists():
 for (title, link) in titles_and_links:
     res_ob = requests.get(link)
     res_ob.raise_for_status()
-    with open(str(path_to_save_files /  Path(title)) + '.txt', 'w', encoding='utf-8') as episode_file:
+    with open(str(path_to_save_files / Path(title)) + '.txt', 'w', encoding='utf-8') as episode_file:
         episode_file.write(res_ob.text)
